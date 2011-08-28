@@ -23,9 +23,11 @@
 
 import abc
 import math
+import numpy as np
 
 
-_all_colour_spaces = ['XYZ', 'xyY', 'Lab', 'LCHab', 'Luv', 'LCHuv']
+_all_colour_spaces = ['XYZ', 'xyY', 'Lab', 'LCHab', 'Luv', 'LCHuv',
+                      'LinearRGB']
 
 _CIE_EPSILON = 216 / 24389
 _CIE_KAPPA = 24389 / 27
@@ -52,7 +54,7 @@ class ColourSpace(metaclass=abc.ABCMeta):
     """
     The Abstract Base Class which all the other colour classes inherit.
     """
-    
+
     @abc.abstractmethod
     def __init__(self, *tri):
         """
@@ -61,56 +63,57 @@ class ColourSpace(metaclass=abc.ABCMeta):
         :param tri: tristimulus
         :type tri: floats
         """
-        self.t1, self.t2, self.t3 = tri
+        self._t1, self._t2, self._t3 = tri
 
 
     def __repr__(self):
         return "{0}{1}".format(self.__class__.__name__, self.tri)
 
-    
+
     def __str__(self):
         return "{0}{1}".format(self.__class__.__name__.strip("Colour_"),
-                               self.tri)    
+                               self.tri)
 
 
     @property
-    def t1(self):
-        return self._t1
+    def _t1(self):
+        return self.__t1
 
-    
-    @t1.setter
-    def t1(self, t1):
-        self._t1 = t1
 
-        
+    @_t1.setter
+    def _t1(self, t1):
+        self.__t1 = t1
+
+
     @property
-    def t2(self):
-        return self._t2
+    def _t2(self):
+        return self.__t2
 
-    
-    @t2.setter
-    def t2(self, t2):
-        self._t2 = t2
 
-        
+    @_t2.setter
+    def _t2(self, t2):
+        self.__t2 = t2
+
+
     @property
-    def t3(self):
-        return self._t3
+    def _t3(self):
+        return self.__t3
 
-    
-    @t3.setter
-    def t3(self, t3):
-        self._t3 = t3
 
-        
+    @_t3.setter
+    def _t3(self, t3):
+        self.__t3 = t3
+
+
     @property
     def tri(self):
         """
-        Returns 3-tuple of floats representing a position in the colour space.
+        Returns 3-tuple of floats representing the tristimulus values of
+        a colour in the colour space.
         """
-        return (self.t1, self.t2, self.t3)
+        return (self._t1, self._t2, self._t3)
 
-    
+
     @tri.setter
     def tri(self, tri):
         """
@@ -119,7 +122,7 @@ class ColourSpace(metaclass=abc.ABCMeta):
         :param tri: tristimulus
         :type tri: floats
         """
-        self.t1, self.t2, self.t3 = tri
+        self._t1, self._t2, self._t3 = tri
 
 
     @staticmethod
@@ -133,10 +136,10 @@ class ColourSpace(metaclass=abc.ABCMeta):
         for cs in _all_colour_spaces:
             yield cs
 
-            
-    
+
+
 class Colour_XYZ(ColourSpace):
-    
+
     def __init__(self, X=1.0, Y=1.0, Z=1.0):
         """
         Initializes the tristimulus values of a colour in XYZ colour space.
@@ -152,32 +155,13 @@ class Colour_XYZ(ColourSpace):
 
 
     @property
-    def XYZ(self):
-        """
-        Returns 3-tuple of floats representing a position in XYZ colour space.
-        """
-        return self.tri
-
-    
-    @XYZ.setter
-    def XYZ(self, XYZ):
-        """
-        Sets the tristimulus values of a colour in XYZ colour space.
-
-        :param XYZ: tristimulus values
-        :type XYZ: floats
-        """       
-        self.tri = XYZ
-        
-    
-    @property
     def X(self):
         """
         Returns the `X` coordinate.
 
         :rtype: float
         """
-        return self.t1
+        return self._t1
 
 
     @X.setter
@@ -188,7 +172,7 @@ class Colour_XYZ(ColourSpace):
         :param X: The X coordinate
         :type X: float
         """
-        self.t1 = X
+        self._t1 = X
 
 
     @property
@@ -198,7 +182,7 @@ class Colour_XYZ(ColourSpace):
 
         :rtype: float
         """
-        return self.t2
+        return self._t2
 
 
     @Y.setter
@@ -209,7 +193,7 @@ class Colour_XYZ(ColourSpace):
         :param Y: The Y coordinate
         :type Y: float
         """
-        self.t2 = Y
+        self._t2 = Y
 
 
     @property
@@ -219,7 +203,7 @@ class Colour_XYZ(ColourSpace):
 
         :rtype: float
         """
-        return self.t3
+        return self._t3
 
 
     @Z.setter
@@ -230,9 +214,9 @@ class Colour_XYZ(ColourSpace):
         :param Z: The Z coordinate
         :type Z: float
         """
-        self.t3 = Z
+        self._t3 = Z
 
-        
+
     def from_xyY(self, col):
         """
         Sets the tristimulus values to new values computed by transforming
@@ -245,7 +229,7 @@ class Colour_XYZ(ColourSpace):
         self.Y = col.Y
         self.Z = (1.0 - col.x - col.y) / col.y * col.Y
 
-        
+
     def from_Lab(self, col, rw):
         """
         Sets the tristimulus values to new values computed by transforming
@@ -254,7 +238,7 @@ class Colour_XYZ(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_Lab`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
+        :type rw: :class:`BaseIlluminant`
         """
         fy = (col.L + 16.0) / 116.0
         fx = (col.a / 500.0) + fy
@@ -290,7 +274,7 @@ class Colour_XYZ(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_LCHab`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
+        :type rw: :class:`BaseIlluminant`
         """
         self.from_Lab(col.to_Lab(), rw)
 
@@ -303,13 +287,13 @@ class Colour_XYZ(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_Luv`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
+        :type rw: :class:`BaseIlluminant`
         """
         (uo, vo) = _compute_uo_vo(rw)
         c = -1/3
         a = (((52 * col.L) / (col.u + 13 * col.L * uo)) - 1) / 3
         if col.L > cie_ke():
-            self.Y = math.pow( (col.tri[0] + 16.0) / 116.0, 3.0 )
+            self.Y = math.pow( (col.L + 16.0) / 116.0, 3.0 )
         else:
             self.Y = col.L / cie_kappa()
 
@@ -327,14 +311,41 @@ class Colour_XYZ(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_LCHuv`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
+        :type rw: :class:`BaseIlluminant`
         """
         self.from_Luv(col.to_Luv(), rw)
 
-    
+
+    def from_LinearRGB(self, col):
+        """
+        Sets the tristimulus values to new values computed by transforming
+        tristimulus values in any `LinearRGB` colour space to `XYZ` colour space.
+
+        :param col: colour
+        :type col: :class:`Colour_LinearRGB`
+        """
+        import numpy as np
+        t = np.zeros((3, 1))
+        if col.r < 0.0:
+            t[0, 0] = math.pow(-col.r, col.gamma) * -1.0
+        else:
+            t[0, 0] = math.pow(col.r, col.gamma)
+
+        if col.g < 0.0:
+            t[1, 0] = math.pow(-col.g, col.gamma) * -1.0
+        else:
+            t[1, 0] = math.pow(col.g, col.gamma)
+
+        if col.b < 0.0:
+            t[2, 0] = math.pow(-col.b, col.gamma) * -1.0
+        else:
+            t[2, 0] = math.pow(col.b, col.gamma)
+        self.tri = (col.m_adapted * t).flat      
+
+
     for cs in ColourSpace.supported_colour_spaces():
         if cs is not 'XYZ':
-            if cs in ('xyY'):
+            if cs in ('xyY', 'LinearRGB'):
                 exec("def to_{0}(self):\n"
                      "  rt = Colour_{0}()\n"
                      "  rt.from_{1}(self)\n"
@@ -345,7 +356,7 @@ class Colour_XYZ(ColourSpace):
                      "  rt.from_{1}(self, rw)\n"
                      "  return rt".format(cs, 'XYZ'))
     del cs
-                 
+
 
 
 class Colour_xyY(ColourSpace):
@@ -365,34 +376,15 @@ class Colour_xyY(ColourSpace):
 
 
     @property
-    def xyY(self):
-        """
-        Returns 3-tuple of floats representing a position in xyY colour space.
-        """        
-        return self.tri
-
-    
-    @xyY.setter
-    def xyY(self, xyY):
-        """
-        Sets the tristimulus values of a colour in xyY colour space.
-
-        :param tri: tristimulus
-        :type tri: floats
-        """               
-        self.tri = xyY
-        
-        
-    @property
     def x(self):
         """
         Returns the `x` coordinate.
 
         :rtype: float
-        """        
-        return self.t1
+        """
+        return self._t1
 
-    
+
     @x.setter
     def x(self, x):
         """
@@ -400,8 +392,8 @@ class Colour_xyY(ColourSpace):
 
         :param x: The x coordinate
         :type x: float
-        """        
-        self.t1 = x
+        """
+        self._t1 = x
 
 
     @property
@@ -410,10 +402,10 @@ class Colour_xyY(ColourSpace):
         Returns the `y` coordinate.
 
         :rtype: float
-        """        
-        return self.t2
+        """
+        return self._t2
 
-    
+
     @y.setter
     def y(self, y):
         """
@@ -421,8 +413,8 @@ class Colour_xyY(ColourSpace):
 
         :param y: The y coordinate
         :type y: float
-        """         
-        self.t2 = y
+        """
+        self._t2 = y
 
 
     @property
@@ -431,10 +423,10 @@ class Colour_xyY(ColourSpace):
         Returns the `Y` coordinate.
 
         :rtype: float
-        """        
-        return self.t3
+        """
+        return self._t3
 
-    
+
     @Y.setter
     def Y(self, Y):
         """
@@ -442,10 +434,10 @@ class Colour_xyY(ColourSpace):
 
         :param Y: The Y coordinate
         :type Y: float
-        """        
-        self.t3 = Y
+        """
+        self._t3 = Y
 
-    
+
     def from_XYZ(self, col):
         """
         Sets the tristimulus values to new values computed by transforming
@@ -453,13 +445,13 @@ class Colour_xyY(ColourSpace):
 
         :param col: colour
         :type col: :class:`Colour_XYZ`
-        """        
+        """
         s = sum(col.XYZ)
         self.x = col.X / s
         self.y = col.Y / s
         self.Y = col.Y
 
-        
+
     def from_Lab(self, col, rw):
         """
         Sets the tristimulus values to new values computed by transforming
@@ -468,8 +460,8 @@ class Colour_xyY(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_Lab`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_XYZ(col.to_XYZ(rw))
 
 
@@ -481,8 +473,8 @@ class Colour_xyY(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_LCHab`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """       
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_XYZ(col.to_XYZ(rw))
 
 
@@ -494,8 +486,8 @@ class Colour_xyY(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_Luv`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_XYZ(col.to_XYZ(rw))
 
 
@@ -507,14 +499,14 @@ class Colour_xyY(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_LCHuv`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_XYZ(col.to_XYZ(rw))
-        
+
 
     for cs in ColourSpace.supported_colour_spaces():
         if cs is not 'xyY':
-            if cs in ('XYZ'):
+            if cs in ('XYZ', 'LinearRGB'):
                 exec("def to_{0}(self):\n"
                      "  rt = Colour_{0}()\n"
                      "  rt.from_{1}(self)\n"
@@ -538,30 +530,11 @@ class Colour_Lab(ColourSpace):
         :param a: The a coordinate
         :type a: float
         :param b: The b coordinate
-        :type b: float        
+        :type b: float
         """
         super().__init__(L, a, b)
 
 
-    @property
-    def Lab(self):
-        """
-        Returns 3-tuple of floats representing a position in Lab colour space.
-        """        
-        return self.tri
-
-    
-    @Lab.setter
-    def Lab(self, Lab):
-        """
-        Sets the tristimulus values of a colour in Lab colour space.
-
-        :param Lab: tristimulus values
-        :type Lab: floats
-        """       
-        self.tri = Lab
-        
-        
     @property
     def L(self):
         """
@@ -569,9 +542,9 @@ class Colour_Lab(ColourSpace):
 
         :rtype: float
         """
-        return self.t1
+        return self._t1
 
-    
+
     @L.setter
     def L(self, L):
         """
@@ -580,19 +553,19 @@ class Colour_Lab(ColourSpace):
         :param L: The L coordinate
         :type L: float
         """
-        self.t1 = L
+        self._t1 = L
 
-    
+
     @property
     def a(self):
         """
         Returns the `a` coordinate.
 
         :rtype: float
-        """       
-        return self.t2
+        """
+        return self._t2
 
-    
+
     @a.setter
     def a(self, a):
         """
@@ -601,8 +574,8 @@ class Colour_Lab(ColourSpace):
         :param a: The a coordinate
         :type a: float
         """
-        self.t2 = a
-        
+        self._t2 = a
+
 
     @property
     def b(self):
@@ -610,10 +583,10 @@ class Colour_Lab(ColourSpace):
         Returns the `b` coordinate.
 
         :rtype: float
-        """        
-        return self.t3
+        """
+        return self._t3
 
-    
+
     @b.setter
     def b(self, b):
         """
@@ -622,7 +595,7 @@ class Colour_Lab(ColourSpace):
         :param b: The b coordinate
         :type b: float
         """
-        self.t3 = b
+        self._t3 = b
 
 
     def from_XYZ(self, col, rw):
@@ -633,8 +606,8 @@ class Colour_Lab(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_XYZ`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """         
+        :type rw: :class:`BaseIlluminant`
+        """
         xr = col.X / rw.X
         yr = col.Y / rw.Y
         zr = col.Z / rw.Z
@@ -667,8 +640,8 @@ class Colour_Lab(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_xyY`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """          
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_XYZ(col.to_XYZ(), rw)
 
 
@@ -679,7 +652,7 @@ class Colour_Lab(ColourSpace):
 
         :param col: colour
         :type col: :class:`Colour_LCHab`
-        """        
+        """
         self.L = col.L
         self.a = col.C * math.cos(math.radians(col.H))
         self.b = col.C * math.sin(math.radians(col.H))
@@ -693,8 +666,8 @@ class Colour_Lab(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_Luv`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_XYZ(col.to_XYZ(rw), rw)
 
 
@@ -706,11 +679,11 @@ class Colour_Lab(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_LCHuv`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_XYZ(col.to_XYZ(rw), rw)
-        
-        
+
+
     for cs in ColourSpace.supported_colour_spaces():
         if cs is not 'Lab':
             if cs in ('LCHab'):
@@ -724,7 +697,7 @@ class Colour_Lab(ColourSpace):
                      "  rt.from_{1}(self, rw)\n"
                      "  return rt".format(cs, 'Lab'))
     del cs
-        
+
 
 class Colour_LCHab(ColourSpace):
 
@@ -737,40 +710,21 @@ class Colour_LCHab(ColourSpace):
         :param C: The C coordinate
         :type C: float
         :param H: The H coordinate
-        :type H: float        
+        :type H: float
         """
         super().__init__(L, C, H)
 
-        
-    @property
-    def LCH(self):
-        """
-        Returns 3-tuple of floats representing a position in LCHab colour space.
-        """        
-        return self.tri
 
-    
-    @LCH.setter
-    def LCH(self, LCH):
-        """
-        Sets the tristimulus values of a colour in LCHab colour space.
-
-        :param LCH: tristimulus values
-        :type LCH: floats
-        """       
-        self.tri = LCH
-        
-        
     @property
     def L(self):
         """
         Returns the `L` coordinate.
 
         :rtype: float
-        """        
-        return self.t1
+        """
+        return self._t1
 
-    
+
     @L.setter
     def L(self, L):
         """
@@ -779,19 +733,19 @@ class Colour_LCHab(ColourSpace):
         :param L: The L coordinate
         :type L: float
         """
-        self.t1 = L
-        
-    
+        self._t1 = L
+
+
     @property
     def C(self):
         """
         Returns the `C` coordinate.
 
         :rtype: float
-        """        
-        return self.t2
+        """
+        return self._t2
 
-    
+
     @C.setter
     def C(self, C):
         """
@@ -800,7 +754,7 @@ class Colour_LCHab(ColourSpace):
         :param C: The C coordinate
         :type C: float
         """
-        self.t2 = C
+        self._t2 = C
 
 
     @property
@@ -809,10 +763,10 @@ class Colour_LCHab(ColourSpace):
         Returns the `H` coordinate.
 
         :rtype: float
-        """       
-        return self.t3
+        """
+        return self._t3
 
-    
+
     @H.setter
     def H(self, H):
         """
@@ -821,9 +775,9 @@ class Colour_LCHab(ColourSpace):
         :param H: The H coordinate
         :type H: float
         """
-        self.t3 = H
+        self._t3 = H
 
-    
+
     def from_XYZ(self, col, rw):
         """
         Sets the tristimulus values to new values computed by transforming
@@ -832,8 +786,8 @@ class Colour_LCHab(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_XYZ`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_Lab(col.to_Lab(rw))
 
 
@@ -845,8 +799,8 @@ class Colour_LCHab(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_xyY`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_Lab(col.to_Lab(rw))
 
 
@@ -857,7 +811,7 @@ class Colour_LCHab(ColourSpace):
 
         :param col: colour
         :type col: :class:`Colour_Lab`
-        """        
+        """
         self.L = col.L
         self.C = math.sqrt(col.a * col.a + col.b * col.b)
         h = math.angles(math.atan2(col.b, col.a))
@@ -877,8 +831,8 @@ class Colour_LCHab(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_Luv`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_Lab(col.to_Lab(rw))
 
 
@@ -890,10 +844,10 @@ class Colour_LCHab(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_LCHuv`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_Lab(col.to_Lab(rw))
-        
+
 
     for cs in ColourSpace.supported_colour_spaces():
         if cs is not 'LCHab':
@@ -908,7 +862,7 @@ class Colour_LCHab(ColourSpace):
                      "  rt.from_{1}(self, rw)\n"
                      "  return rt".format(cs, 'LCHab'))
     del cs
-        
+
 
 class Colour_Luv(ColourSpace):
 
@@ -921,30 +875,11 @@ class Colour_Luv(ColourSpace):
         :param u: The u coordinate
         :type u: float
         :param v: The v coordinate
-        :type v: float        
+        :type v: float
         """
         super().__init__(L, u, v)
 
-        
-    @property
-    def Luv(self):
-        """
-        Returns 3-tuple of floats representing a position in Luv colour space.
-        """        
-        return self.tri
 
-    
-    @Luv.setter
-    def Luv(self, Luv):
-        """
-        Sets the tristimulus values of a colour in Luv colour space.
-
-        :param Luv: tristimulus values
-        :type Luv: floats
-        """       
-        self.tri = Luv
-        
-        
     @property
     def L(self):
         """
@@ -952,9 +887,9 @@ class Colour_Luv(ColourSpace):
 
         :rtype: float
         """
-        return self.t1
+        return self._t1
 
-    
+
     @L.setter
     def L(self, L):
         """
@@ -963,19 +898,19 @@ class Colour_Luv(ColourSpace):
         :param L: The L coordinate
         :type L: float
         """
-        self.t1 = L
+        self._t1 = L
 
-    
+
     @property
     def u(self):
         """
         Returns the `u` coordinate.
 
         :rtype: float
-        """       
-        return self.t2
+        """
+        return self._t2
 
-    
+
     @u.setter
     def u(self, u):
         """
@@ -984,8 +919,8 @@ class Colour_Luv(ColourSpace):
         :param u: The u coordinate
         :type u: float
         """
-        self.t2 = u
-        
+        self._t2 = u
+
 
     @property
     def v(self):
@@ -993,10 +928,10 @@ class Colour_Luv(ColourSpace):
         Returns the `v` coordinate.
 
         :rtype: float
-        """        
-        return self.t3
+        """
+        return self._t3
 
-    
+
     @v.setter
     def v(self, v):
         """
@@ -1005,9 +940,9 @@ class Colour_Luv(ColourSpace):
         :param v: The v coordinate
         :type v: float
         """
-        self.t3 = v
+        self._t3 = v
 
-    
+
     def from_XYZ(self, col, rw):
         """
         Sets the tristimulus values to new values computed by transforming
@@ -1016,8 +951,8 @@ class Colour_Luv(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_XYZ`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         yr = col.Y / rw.Y
         (up, vp) = _compute_uo_vo(col)
         (urp, vrp) = _compute_uo_vo(rw)
@@ -1025,7 +960,6 @@ class Colour_Luv(ColourSpace):
             self.L = 116 * math.pow(yr, 1/3) - 16
         else:
             self.L = cie_kappa() * yr
-            
         self.u = 13 * L * (up - urp)
         self.v = 13 * L * (vp - vrp)
 
@@ -1038,8 +972,8 @@ class Colour_Luv(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_xyY`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_XYZ(col.to_XYZ(), rw)
 
 
@@ -1051,11 +985,11 @@ class Colour_Luv(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_Lab`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_XYZ(col.to_XYZ(rw), rw)
-        
-        
+
+
     def from_LCHab(self, col, rw):
         """
         Sets the tristimulus values to new values computed by transforming
@@ -1064,8 +998,8 @@ class Colour_Luv(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_LCHab`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_XYZ(col.to_XYZ(rw), rw)
 
 
@@ -1076,12 +1010,12 @@ class Colour_Luv(ColourSpace):
 
         :param col: colour
         :type col: :class:`Colour_LCHuv`
-        """         
+        """
         self.L = col.L
         self.u = col.C * math.cos(math.radians(col.H))
         self.v = col.C * math.sin(math.radians(col.H))
-        
-        
+
+
     for cs in ColourSpace.supported_colour_spaces():
         if cs is not 'Luv':
             if cs in ('LCHuv'):
@@ -1097,8 +1031,6 @@ class Colour_Luv(ColourSpace):
     del cs
 
 
-
-
 class Colour_LCHuv(ColourSpace):
 
     def __init__(self, L=100.0, C=0.0, H=0.0):
@@ -1110,40 +1042,21 @@ class Colour_LCHuv(ColourSpace):
         :param C: The C coordinate
         :type C: float
         :param H: The H coordinate
-        :type H: float        
+        :type H: float
         """
         super().__init__(L, C, H)
 
-        
-    @property
-    def LCH(self):
-        """
-        Returns 3-tuple of floats representing a position in LCHuv colour space.
-        """        
-        return self.tri
 
-    
-    @LCH.setter
-    def LCH(self, LCH):
-        """
-        Sets the tristimulus values of a colour in LCHuv colour space.
-
-        :param LCH: tristimulus values
-        :type LCH: floats
-        """       
-        self.tri = LCH
-        
-        
     @property
     def L(self):
         """
         Returns the `L` coordinate.
 
         :rtype: float
-        """        
-        return self.t1
+        """
+        return self._t1
 
-    
+
     @L.setter
     def L(self, L):
         """
@@ -1152,19 +1065,19 @@ class Colour_LCHuv(ColourSpace):
         :param L: The L coordinate
         :type L: float
         """
-        self.t1 = L
-        
-    
+        self._t1 = L
+
+
     @property
     def C(self):
         """
         Returns the `C` coordinate.
 
         :rtype: float
-        """        
-        return self.t2
+        """
+        return self._t2
 
-    
+
     @C.setter
     def C(self, C):
         """
@@ -1173,7 +1086,7 @@ class Colour_LCHuv(ColourSpace):
         :param C: The C coordinate
         :type C: float
         """
-        self.t2 = C
+        self._t2 = C
 
 
     @property
@@ -1182,10 +1095,10 @@ class Colour_LCHuv(ColourSpace):
         Returns the `H` coordinate.
 
         :rtype: float
-        """       
-        return self.t3
+        """
+        return self._t3
 
-    
+
     @H.setter
     def H(self, H):
         """
@@ -1194,9 +1107,9 @@ class Colour_LCHuv(ColourSpace):
         :param H: The H coordinate
         :type H: float
         """
-        self.t3 = H
-        
-    
+        self._t3 = H
+
+
     def from_XYZ(self, col, rw):
         """
         Sets the tristimulus values to new values computed by transforming
@@ -1205,8 +1118,8 @@ class Colour_LCHuv(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_XYZ`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_Luv(col.to_Luv(rw))
 
 
@@ -1218,8 +1131,8 @@ class Colour_LCHuv(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_xyY`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_Luv(col.to_Luv(rw))
 
 
@@ -1231,11 +1144,11 @@ class Colour_LCHuv(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_Lab`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`        
-        """         
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_Luv(col.to_Luv(rw))
 
-        
+
     def from_LCHab(self, col, rw):
         """
         Sets the tristimulus values to new values computed by transforming
@@ -1244,8 +1157,8 @@ class Colour_LCHuv(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_LCHab`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.from_Luv(col.to_Luv(rw), rw)
 
 
@@ -1257,8 +1170,8 @@ class Colour_LCHuv(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_Luv`
         :param rw: reference white
-        :type rw: :class:`Colour_XYZ`
-        """        
+        :type rw: :class:`BaseIlluminant`
+        """
         self.L = col.L
         self.C = math.sqrt(col.u * col.u + col.v * col.v)
         h = math.angles(math.ata2(col.v, col.u))
@@ -1268,7 +1181,7 @@ class Colour_LCHuv(ColourSpace):
             self.H = h - 360
         else:
             self.H = h
-        
+
 
     for cs in ColourSpace.supported_colour_spaces():
         if cs is not 'LCHuv':
@@ -1283,10 +1196,710 @@ class Colour_LCHuv(ColourSpace):
                      "  rt.from_{1}(self, rw)\n"
                      "  return rt".format(cs, 'LCHuv'))
     del cs
-                
+
+
+_xyz_scaling = np.matrix(np.identity(3))
+
+_von_kries = np.matrix(' 0.40024 -0.2263  0.0;     \
+                         0.7076   1.16532 0.0;     \
+                        -0.08081  0.0457  0.91822')
+
+_bradford = np.matrix(' 0.8951 -0.7502  0.0389; \
+                        0.2664  1.7135 -0.0685; \
+                       -0.1614  0.0367  1.0296' )
+
+_adaptation_methods = {'xyz_scaling': _xyz_scaling,
+                       'von_kries': _von_kries,
+                       'bradford': _bradford}
+
+class BaseRGB(ColourSpace):
+
+    def __init__(self, gamma, rw, r_primary, g_primary, b_primary, r, g, b):
+        """
+        Computes the XYZ-to-RGB and RGB-to-XYZ matrices, and initializes the
+        tristimulus values of a colour based on the RGB colour model.
+
+        :param gamma: The gamma value defined in the specification
+        :type gamma: float
+        :param rw: The reference white chosen by the specification
+        :type rw: :class:`BaseIlluminant`
+        :param r_primary: The red primary 
+        :type r_primary: :class:`Colour_xyY`
+        :param g_primary: The green primary
+        :type g_primary: :class:`Colour_xyY`
+        :param b_primary: The blue primary
+        :type b_primary: :class:`Colour_xyY`
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        self.__gamma = gamma
+        self.__rw = rw
+        self.__m = __class__.__computeConversionMatrix(r_primary,
+                                                       g_primary,
+                                                       b_primary,
+                                                       rw)
+        self.__m_1 = self.__m.I
+        self.adapt(self.__rw, 'bradford')
+        super().__init__(r, g, b)
+
+
+    @property
+    def m(self):
+        """
+        Returns the RGB to XYZ matrix.
+
+        :rtype: numpy.matrix
+        """
+        return self.__m
+
+
+    @property
+    def m_adapted(self):
+        """
+        Returns the chromatic adaptation matrix for RGB to XYZ conversion.
+
+        :rtype: numpy.matrix
+        """
+        return self.__m_adapted
+
+
+    @property
+    def m_1(self):
+        """
+        Returns the XYZ to RGB matrix.
+
+        :rtype: numpy.matrix
+        """
+        return self.__m_1
+
+
+    @property
+    def m_1_adapted(self):
+        """
+        Returns the chromatic adaptation matrix for XYZ to RGB conversion.
+
+        :rtype: numpy.matrix
+        """
+        return self.__m_1_adapted
+
+
+    @property
+    def gamma(self):
+        """
+        Returns the `gamma`.
+
+        :rtype: float
+        """
+        return self.__gamma
+
+
+    @property
+    def r(self):
+        """
+        Returns the `r` coordinate.
+        """
+        return self._t1
+
+
+    @r.setter
+    def r(self, r):
+        """
+        Sets the `r` coordinate.
+
+        :param r: The r coordinate
+        :rtype r: float
+        """
+        self._t1 = r
+
+
+    @property
+    def g(self):
+        """
+        Returns the `g` coordinate.
+        """
+        return self._t2
+
+
+    @g.setter
+    def g(self, g):
+        """
+        Sets the `g` coordinate.
+
+        :param g: The g coordinate
+        :rtype g: float
+        """
+        self._t2 = g
+
+
+    @property
+    def b(self):
+        """
+        Returns the `b` coordinate.
+        """
+        return self._t3
+
+
+    @b.setter
+    def b(self, b):
+        """
+        Sets the `b` coordinate.
+
+        :param b: The b coordinate
+        :rtype b: float
+        """
+        self._t3 = b
+
+
+    def adapt(self, target_rw, am='bradford'):
+        """
+        If the user wants XYZ relative to a different reference white, then
+        chromatic adaptation transform must be applied to the XYZ colour to
+        convert it from the reference white of the RGB system to the desired
+        reference white.  Given a target reference white, `target_rw`, this
+        method computes the chromatic adaptation matrix that is needed to
+        convert RGB to XYZ and XYZ to RGB.
+
+        :param target_rw: The desired reference white
+        :type target_rw: :class:`Colour_xyY`
+        :param am: The name of adaptation method to be used; 'xyz_scaling',
+        'von_kries', and 'bradford' methods are supported.  'bradford' is used
+        by default.
+        :type am: string
+        """
+        if am not in _adaptation_methods:
+            raise ValueError("unsupported adaptation method")
+        method = _adaptation_methods.get(am)
+        self.__m_adapted = __class__. \
+            __computeChromaticAdaptationMatrix(self.__rw,
+                                               target_rw,
+                                               method) * self.m
+        self.__m_1_adapted = self.__m_adapted.I
+
+
+    @staticmethod
+    def __computeConversionMatrix(red, green, blue, rw):
+        """
+        Computes the conversion matrix used in linear-RGB to XYZ conversion.
+
+        :param red: the primary red
+        :type red: :class:`Colour_xyY`
+        :param green: the primary green
+        :type green: :class:`Colour_xyY`
+        :param blue: the primary blue
+        :type blue: :class:`Colour_xyY`
+        :return: linear-RGB to XYZ conversion matrix
+        :rtype: numpy.matrix
+        """
+        xyzs = np.matrix(np.zeros((3, 3)))
+        xyzs[:,0] = np.asarray(red.to_XYZ().tri).reshape(3, 1)
+        xyzs[:,1] = np.asarray(green.to_XYZ().tri).reshape(3, 1)
+        xyzs[:,2] = np.asarray(blue.to_XYZ().tri).reshape(3, 1)
+        S = xyzs.I * np.array([[rw.X], [rw.Y], [rw.Z]])
+        M = np.matrix(np.zeros((3, 3)))
+        M[:,0] = S[0,0] * xyzs[:,0]
+        M[:,1] = S[1,0] * xyzs[:,1]
+        M[:,2] = S[2,0] * xyzs[:,2]
+        return M
+
+
+    @staticmethod
+    def __computeChromaticAdaptationMatrix(source, target, method):
+        """
+        Computes the chromatic adaptation matrix
+
+        :param source: source reference white
+        :type source: :class:`Colour_BaseIlluminant`
+        :param target: target reference white
+        :type target: :class:`Colour_BaseIlluminant`
+        :param method: adaptation method
+        :type method: numpy.matrix
+        :return: chromatic adaptation matrix
+        :rtype: numpy.matrix
+        """
+        S = method * np.array([[source.X], [source.Y], [source.Z]]);
+        D = method * np.array([[target.X], [target.Y], [target.Z]]);
+        tmp = np.matrix(np.zeros((3, 3)))
+        tmp[0, 0] = D[0] / S[0]
+        tmp[1, 1] = D[1] / S[1]
+        tmp[2, 2] = D[2] / S[2]
+        return method.I * tmp * method
+
+
+class LinearRGB(BaseRGB):
+
+    def __init__(self, gamma, rw, rp, gp, bp, r, g, b):
+        """
+        see BaseRGB __init__().
+        """
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
+    def from_XYZ(self, col):
+        """
+        Sets the tristimulus values to new values computed by transforming
+        tristimulus values in 'XYZ' colour space to a 'LinearRGB' colour space.
+
+        :param col: colour
+        :type col: :class:`Colour_XYZ`
+        """
+        p = 1.0 / self.gamma
+        self.tri = self.m_1_adapted * np.array([[col._t1], [col._t2], [col._t3]])
+
+        if self._t1 < 0.0:
+            self._t1 = math.pow(-self._t1, p) * -1.0
+        else:
+            self._t1 = math.pow(self._t1, p)
+
+        if self._t2 < 0.0:
+            self._t2 = math.pow(-self._t2, p) * -1.0
+        else:
+            self._t2 = math.pow(self._t2, p)
+
+        if self._t3 < 0.0:
+            self._t3 = math.pow(-self._t3, p) * -1.0
+        else:
+            self._t3 = math.pow(self._t3, p)
+
+
+    def from_xyY(self, col):
+        """
+        Sets the tristimulus values to new values computed by transforming
+        tristimulus values in 'xyY' colour space to a 'LinearRGB' colour space.
+
+        :param col: colour
+        :type col: :class:`Colour_xyY`
+        """        
+        self.from_XYZ(col.to_XYZ())
+
+
+    def from_Lab(self, col, rw):
+        """
+        Sets the tristimulus values to new values computed by transforming
+        tristimulus values in 'Lab' colour space to a 'LinearRGB' colour space.
+
+        :param col: colour
+        :type col: :class:`Colour_Lab`
+        :param rw: reference white
+        :type rw: :class:`BaseIlluminant`
+        """
+        self.from_XYZ(col.to_XYZ(rw))
+
+
+    def from_LCHab(self, col, rw):
+        """
+        Sets the tristimulus values to new values computed by transforming
+        tristimulus values in 'LCHab' colour space to a 'LinearRGB' colour space.
+
+        :param col: colour
+        :type col: :class:`Colour_LCHab`
+        :param rw: reference white
+        :type rw: :class:`BaseIlluminant`
+        """
+        self.from_XYZ(col.to_XYZ(rw))
+
+
+    def from_Luv(self, col, rw):
+        """
+        Sets the tristimulus values to new values computed by transforming
+        tristimulus values in 'Luv' colour space to a 'LinearRGB' colour space.
+
+        :param col: colour
+        :type col: :class:`Colour_Luv`
+        :param rw: reference white
+        :type rw: :class:`BaseIlluminant`
+        """
+        self.from_XYZ(col.to_XYZ(rw))
+
+
+    def from_LCHuv(self, col, rw):
+        """
+        Sets the tristimulus values to new values computed by transforming
+        tristimulus values in 'LCHuv' colour space to a 'LinearRGB' colour space.
+
+        :param col: colour
+        :type col: :class:`Colour_LCHuv`
+        :param rw: reference white
+        :type rw: :class:`BaseIlluminant`
+        """
+        self.from_XYZ(col.to_XYZ(rw))
+
+
+    for cs in ColourSpace.supported_colour_spaces():
+        if cs is not 'LinearRGB':
+            if cs in ('XYZ', 'xyY'):
+                exec("def to_{0}(self):\n"
+                     "  rt = Colour_{0}()\n"
+                     "  rt.from_{1}(self)\n"
+                     "  return rt".format(cs, 'LCHuv'))
+            else:
+                exec("def to_{0}(self, rw):\n"
+                     "  rt = Colour_{0}()\n"
+                     "  rt.from_{1}(self, rw)\n"
+                     "  return rt".format(cs, 'LCHuv'))
+    del cs
+
+
+class Colour_AdobeRGB(LinearRGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in Adobe RGB colour space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 2.0 + 51.0 / 256.0
+        rw = illum.IlluminantD65('1931_2')
+        rp = Colour_xyY(0.64, 0.33)
+        gp = Colour_xyY(0.21, 0.71)
+        bp = Colour_xyY(0.15, 0.06)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
+class Colour_AppleRGB(LinearRGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in Apple RGB colour space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 1.8
+        rw = illum.IlluminantD65('1931_2')
+        rp = Colour_xyY(0.625, 0.340)
+        gp = Colour_xyY(0.280, 0.595)
+        bp = Colour_xyY(0.155, 0.070)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
+class Colour_BestRGB(LinearRGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in Best RGB colour space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 2.2
+        rw = illum.IlluminantD50('1931_2')
+        rp = Colour_xyY(0.7347, 0.2653)
+        gp = Colour_xyY(0.2150, 0.7750)
+        bp = Colour_xyY(0.1300, 0.0350)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
+class Colour_BetaRGB(LinearRGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in Beta RGB colour space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 2.2
+        rw = illum.IlluminantD50('1931_2')
+        rp = Colour_xyY(0.6888, 0.3112)
+        gp = Colour_xyY(0.1986, 0.7551)
+        bp = Colour_xyY(0.1265, 0.0352)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
+class Colour_BruceRGB(LinearRGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in Bruce RGB colour space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 2.2
+        rw = illum.IlluminantD65('1931_2')
+        rp = Colour_xyY(0.64, 0.33)
+        gp = Colour_xyY(0.28, 0.65)
+        bp = Colour_xyY(0.15, 0.06)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
+class Colour_CIERGB(LinearRGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in CIE RGB colour space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 2.2
+        rw = illum.IlluminantE('1931_2')
+        rp = Colour_xyY(0.735, 0.265)
+        gp = Colour_xyY(0.274, 0.717)
+        bp = Colour_xyY(0.167, 0.009)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
+class Colour_ColorMatchRGB(LinearRGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in ColorMatch RGB colour
+        space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 1.8
+        rw = illum.IlluminantD50('1931_2')
+        rp = Colour_xyY(0.630, 0.340)
+        gp = Colour_xyY(0.295, 0.605)
+        bp = Colour_xyY(0.150, 0.075)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
+class Colour_DonRGB4(LinearRGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in Don RGB 4 colour space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 2.2
+        rw = illum.IlluminantD50('1931_2')
+        rp = Colour_xyY(0.696, 0.300)
+        gp = Colour_xyY(0.215, 0.765)
+        bp = Colour_xyY(0.130, 0.035)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
+class Colour_ECIRGB(LinearRGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in ECI RGB colour space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 1.8
+        rw = illum.IlluminantD50('1931_2')
+        rp = Colour_xyY(0.67, 0.33)
+        gp = Colour_xyY(0.21, 0.71)
+        bp = Colour_xyY(0.14, 0.08)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
+class Colour_EktaSpacePS5(LinearRGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in Ekta Space PS5 colour
+        space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 2.2
+        rw = illum.IlluminantD50('1931_2')
+        rp = Colour_xyY(0.695, 0.305)
+        gp = Colour_xyY(0.260, 0.700)
+        bp = Colour_xyY(0.110, 0.005)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
+class Colour_NTSCRGB(LinearRGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in NTSC RGB colour space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 2.2
+        rw = illum.IlluminantC('1931_2')
+        rp = Colour_xyY(0.67, 0.33)
+        gp = Colour_xyY(0.21, 0.71)
+        bp = Colour_xyY(0.14, 0.08)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
+class Colour_PAL_SECAMRGB(LinearRGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in PAL/SECAM RGB colour
+        space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 2.2
+        rw = illum.IlluminantD65('1931_2')
+        rp = Colour_xyY(0.64, 0.33)
+        gp = Colour_xyY(0.29, 0.60)
+        bp = Colour_xyY(0.15, 0.06)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
+class Colour_ProPhotoRGB(LinearRGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in ProPhoto RGB colour
+        space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 1.8
+        rw = illum.IlluminantD50('1931_2')
+        rp = Colour_xyY(0.7347, 0.2653)
+        gp = Colour_xyY(0.1596, 0.8404)
+        bp = Colour_xyY(0.0366, 0.0001)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
+class Colour_SMPTE_CRGB(LinearRGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in SMPTE-C RGB colour
+        space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 2.2
+        rw = illum.IlluminantD65('1931_2')
+        rp = Colour_xyY(0.630, 0.340)
+        gp = Colour_xyY(0.310, 0.595)
+        bp = Colour_xyY(0.155, 0.070)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
+class Colour_WideGamutRGB(LinearRGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in Wide Gamut RGB colour
+        space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 2.2
+        rw = illum.IlluminantD50('1931_2')
+        rp = Colour_xyY(0.735, 0.265)
+        gp = Colour_xyY(0.115, 0.826)
+        bp = Colour_xyY(0.157, 0.018)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
 
 def colour(t1, t2, t3, cs):
     if cs not in ColourSpace.supported_colour_spaces():
         raise ValueError("unsupported colour space")
     return eval("Colour_{0}(t1, t2, t3)".format(cs))
 
+
+"""
+class converter():
+
+    def __init__(self, source, target):
+        self.__src = eval("Colour_{0}()".format(source))
+        tar = eval("Colour_{0}()".format(target))
+        self.__func = eval("tar.from_{0}".format(source))
+
+    def __call__(self, t1, t2, t3, rw=None):
+        self.__src._tri = (t1, t2, t3)
+        if rw is None:
+        self.__func(self.__src)
+        return self.__func.__self__._tri
+        """
+
+#if __name__ == "__main__":
+#    import doctest
+#    doctest.testmod()
