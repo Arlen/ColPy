@@ -26,8 +26,13 @@ import math
 import numpy as np
 
 
-_all_colour_spaces = ['XYZ', 'xyY', 'Lab', 'LCHab', 'Luv', 'LCHuv',
-                      'LinearRGB']
+_linear_RGB_colour_spaces = ['AdobeRGB', 'AppleRGB', 'BestRGB', 'BetaRGB',
+                             'BruceRGB', 'CIERGB', 'ColorMatchRGB', 'DonRGB4',
+                             'ECIRGB', 'EktaSpacePS5', 'NTSCRGB', 'PAL_SECAMRGB',
+                             'ProPhotoRGB', 'SMPTE_CRGB', 'WideGamutRGB']
+
+_all_colour_spaces = ['XYZ', 'xyY', 'Lab', 'LCHab', 'Luv', 'LCHuv'] + \
+    _linear_RGB_colour_spaces
 
 _CIE_EPSILON = 216 / 24389
 _CIE_KAPPA = 24389 / 27
@@ -345,7 +350,10 @@ class Colour_XYZ(ColourSpace):
 
     for cs in ColourSpace.supported_colour_spaces():
         if cs is not 'XYZ':
-            if cs in ('xyY', 'LinearRGB'):
+            if cs in ('xyY', 'AdobeRGB', 'AppleRGB', 'BestRGB', 'BetaRGB',
+                      'BruceRGB', 'CIERGB', 'ColorMatchRGB', 'DonRGB4', 'ECIRGB',
+                      'EktaSpacePS5', 'NTSCRGB', 'PAL_SECAMRGB', 'ProPhotoRGB',
+                      'SMPTE_CRGB', 'WideGamutRGB'):
                 exec("def to_{0}(self):\n"
                      "  rt = Colour_{0}()\n"
                      "  rt.from_{1}(self)\n"
@@ -446,7 +454,7 @@ class Colour_xyY(ColourSpace):
         :param col: colour
         :type col: :class:`Colour_XYZ`
         """
-        s = sum(col.XYZ)
+        s = sum(col.tri)
         self.x = col.X / s
         self.y = col.Y / s
         self.Y = col.Y
@@ -503,10 +511,24 @@ class Colour_xyY(ColourSpace):
         """
         self.from_XYZ(col.to_XYZ(rw))
 
+        
+    def from_LinearRGB(self, col):
+        """
+        Sets the tristimulus values to new values computed by transforming
+        tristimulus values in any `LinearRGB` colour space to `xyY` colour space.
+
+        :param col: colour
+        :type col: :class:`Colour_LinearRGB`
+        """
+        self.from_XYZ(col.to_XYZ())
+
 
     for cs in ColourSpace.supported_colour_spaces():
         if cs is not 'xyY':
-            if cs in ('XYZ', 'LinearRGB'):
+            if cs in ('XYZ', 'AdobeRGB', 'AppleRGB', 'BestRGB', 'BetaRGB',
+                      'BruceRGB', 'CIERGB', 'ColorMatchRGB', 'DonRGB4', 'ECIRGB',
+                      'EktaSpacePS5', 'NTSCRGB', 'PAL_SECAMRGB', 'ProPhotoRGB',
+                      'SMPTE_CRGB', 'WideGamutRGB'):
                 exec("def to_{0}(self):\n"
                      "  rt = Colour_{0}()\n"
                      "  rt.from_{1}(self)\n"
@@ -684,6 +706,17 @@ class Colour_Lab(ColourSpace):
         self.from_XYZ(col.to_XYZ(rw), rw)
 
 
+    def from_LinearRGB(self, col, rw):
+        """
+        Sets the tristimulus values to new values computed by transforming
+        tristimulus values in any `LinearRGB` colour space to `Lab` colour space.
+
+        :param col: colour
+        :type col: :class:`Colour_LinearRGB`
+        """
+        self.from_XYZ(col.to_XYZ(), rw)
+
+
     for cs in ColourSpace.supported_colour_spaces():
         if cs is not 'Lab':
             if cs in ('LCHab'):
@@ -847,6 +880,18 @@ class Colour_LCHab(ColourSpace):
         :type rw: :class:`BaseIlluminant`
         """
         self.from_Lab(col.to_Lab(rw))
+
+
+    def from_LinearRGB(self, col, rw):
+        """
+        Sets the tristimulus values to new values computed by transforming
+        tristimulus values in any `LinearRGB` colour space to `LCHab` colour
+        space.
+
+        :param col: colour
+        :type col: :class:`Colour_LinearRGB`
+        """
+        self.from_XYZ(col.to_XYZ(), rw)
 
 
     for cs in ColourSpace.supported_colour_spaces():
@@ -1016,6 +1061,17 @@ class Colour_Luv(ColourSpace):
         self.v = col.C * math.sin(math.radians(col.H))
 
 
+    def from_LinearRGB(self, col, rw):
+        """
+        Sets the tristimulus values to new values computed by transforming
+        tristimulus values in any `LinearRGB` colour space to `Luv` colour space.
+
+        :param col: colour
+        :type col: :class:`Colour_LinearRGB`
+        """
+        self.from_XYZ(col.to_XYZ(), rw)
+
+
     for cs in ColourSpace.supported_colour_spaces():
         if cs is not 'Luv':
             if cs in ('LCHuv'):
@@ -1181,6 +1237,18 @@ class Colour_LCHuv(ColourSpace):
             self.H = h - 360
         else:
             self.H = h
+
+
+    def from_LinearRGB(self, col, rw):
+        """
+        Sets the tristimulus values to new values computed by transforming
+        tristimulus values in any `LinearRGB` colour space to `LCHuv` colour
+        space.
+
+        :param col: colour
+        :type col: :class:`Colour_LinearRGB`
+        """
+        self.from_XYZ(col.to_XYZ(), rw)
 
 
     for cs in ColourSpace.supported_colour_spaces():
@@ -1534,12 +1602,12 @@ class LinearRGB(BaseRGB):
                 exec("def to_{0}(self):\n"
                      "  rt = Colour_{0}()\n"
                      "  rt.from_{1}(self)\n"
-                     "  return rt".format(cs, 'LCHuv'))
+                     "  return rt".format(cs, 'LinearRGB'))
             else:
                 exec("def to_{0}(self, rw):\n"
                      "  rt = Colour_{0}()\n"
                      "  rt.from_{1}(self, rw)\n"
-                     "  return rt".format(cs, 'LCHuv'))
+                     "  return rt".format(cs, 'LinearRGB'))
     del cs
 
 
@@ -1885,20 +1953,23 @@ def colour(t1, t2, t3, cs):
     return eval("Colour_{0}(t1, t2, t3)".format(cs))
 
 
-"""
+
 class converter():
 
     def __init__(self, source, target):
         self.__src = eval("Colour_{0}()".format(source))
         tar = eval("Colour_{0}()".format(target))
-        self.__func = eval("tar.from_{0}".format(source))
+        if source in _linear_RGB_colour_spaces:
+            self.__func = eval("tar.from_LinearRGB")
+        else:
+            self.__func = eval("tar.from_{0}".format(source))
 
     def __call__(self, t1, t2, t3, rw=None):
-        self.__src._tri = (t1, t2, t3)
+        self.__src.tri = (t1, t2, t3)
         if rw is None:
-        self.__func(self.__src)
-        return self.__func.__self__._tri
-        """
+            self.__func(self.__src)
+        return self.__func.__self__.tri
+
 
 #if __name__ == "__main__":
 #    import doctest
