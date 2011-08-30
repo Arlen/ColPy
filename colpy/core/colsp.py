@@ -26,13 +26,14 @@ import math
 import numpy as np
 
 
-_linear_RGB_colour_spaces = ['AdobeRGB', 'AppleRGB', 'BestRGB', 'BetaRGB',
-                             'BruceRGB', 'CIERGB', 'ColorMatchRGB', 'DonRGB4',
-                             'ECIRGB', 'EktaSpacePS5', 'NTSCRGB', 'PAL_SECAMRGB',
-                             'ProPhotoRGB', 'SMPTE_CRGB', 'WideGamutRGB']
+_RGB = ['AdobeRGB', 'AppleRGB', 'BestRGB', 'BetaRGB','BruceRGB', 'CIERGB',
+        'ColorMatchRGB', 'DonRGB4', 'ECIRGB', 'EktaSpacePS5', 'NTSCRGB',
+        'PAL_SECAMRGB', 'ProPhotoRGB', 'SMPTE_CRGB', 'WideGamutRGB', 'sRGB']
 
-_all_colour_spaces = ['XYZ', 'xyY', 'Lab', 'LCHab', 'Luv', 'LCHuv'] + \
-    _linear_RGB_colour_spaces
+_non_RGB = ['XYZ', 'xyY', 'Lab', 'LCHab', 'Luv', 'LCHuv']
+
+_all_colour_spaces = _RGB + _non_RGB
+
 
 _CIE_EPSILON = 216 / 24389
 _CIE_KAPPA = 24389 / 27
@@ -321,39 +322,22 @@ class Colour_XYZ(ColourSpace):
         self.from_Luv(col.to_Luv(), rw)
 
 
-    def from_LinearRGB(self, col):
+    def from_RGB(self, col):
         """
         Sets the tristimulus values to new values computed by transforming
-        tristimulus values in any `LinearRGB` colour space to `XYZ` colour space.
+        tristimulus values in any `RGB` colour space to `XYZ` colour space.
 
         :param col: colour
-        :type col: :class:`Colour_LinearRGB`
+        :type col: :class:`Colour_RGB`
         """
-        import numpy as np
-        t = np.zeros((3, 1))
-        if col.r < 0.0:
-            t[0, 0] = math.pow(-col.r, col.gamma) * -1.0
-        else:
-            t[0, 0] = math.pow(col.r, col.gamma)
-
-        if col.g < 0.0:
-            t[1, 0] = math.pow(-col.g, col.gamma) * -1.0
-        else:
-            t[1, 0] = math.pow(col.g, col.gamma)
-
-        if col.b < 0.0:
-            t[2, 0] = math.pow(-col.b, col.gamma) * -1.0
-        else:
-            t[2, 0] = math.pow(col.b, col.gamma)
+        t = col.inverse_companding(col.gamma, col.r, col.g, col.b)
         self.tri = (col.m_adapted * t).flat      
 
 
     for cs in ColourSpace.supported_colour_spaces():
+        reference_white_not_required = ['xyY'] + _RGB
         if cs is not 'XYZ':
-            if cs in ('xyY', 'AdobeRGB', 'AppleRGB', 'BestRGB', 'BetaRGB',
-                      'BruceRGB', 'CIERGB', 'ColorMatchRGB', 'DonRGB4', 'ECIRGB',
-                      'EktaSpacePS5', 'NTSCRGB', 'PAL_SECAMRGB', 'ProPhotoRGB',
-                      'SMPTE_CRGB', 'WideGamutRGB'):
+            if cs in reference_white_not_required:
                 exec("def to_{0}(self):\n"
                      "  rt = Colour_{0}()\n"
                      "  rt.from_{1}(self)\n"
@@ -364,7 +348,7 @@ class Colour_XYZ(ColourSpace):
                      "  rt.from_{1}(self, rw)\n"
                      "  return rt".format(cs, 'XYZ'))
     del cs
-
+    del reference_white_not_required
 
 
 class Colour_xyY(ColourSpace):
@@ -512,23 +496,21 @@ class Colour_xyY(ColourSpace):
         self.from_XYZ(col.to_XYZ(rw))
 
         
-    def from_LinearRGB(self, col):
+    def from_RGB(self, col):
         """
         Sets the tristimulus values to new values computed by transforming
-        tristimulus values in any `LinearRGB` colour space to `xyY` colour space.
+        tristimulus values in any `RGB` colour space to `xyY` colour space.
 
         :param col: colour
-        :type col: :class:`Colour_LinearRGB`
+        :type col: :class:`Colour_RGB`
         """
         self.from_XYZ(col.to_XYZ())
 
 
     for cs in ColourSpace.supported_colour_spaces():
+        reference_white_not_required = ['XYZ'] + _RGB
         if cs is not 'xyY':
-            if cs in ('XYZ', 'AdobeRGB', 'AppleRGB', 'BestRGB', 'BetaRGB',
-                      'BruceRGB', 'CIERGB', 'ColorMatchRGB', 'DonRGB4', 'ECIRGB',
-                      'EktaSpacePS5', 'NTSCRGB', 'PAL_SECAMRGB', 'ProPhotoRGB',
-                      'SMPTE_CRGB', 'WideGamutRGB'):
+            if cs in reference_white_not_required:
                 exec("def to_{0}(self):\n"
                      "  rt = Colour_{0}()\n"
                      "  rt.from_{1}(self)\n"
@@ -539,6 +521,7 @@ class Colour_xyY(ColourSpace):
                      "  rt.from_{1}(self, rw)\n"
                      "  return rt".format(cs, 'xyY'))
     del cs
+    del reference_white_not_required
 
 
 class Colour_Lab(ColourSpace):
@@ -706,13 +689,13 @@ class Colour_Lab(ColourSpace):
         self.from_XYZ(col.to_XYZ(rw), rw)
 
 
-    def from_LinearRGB(self, col, rw):
+    def from_RGB(self, col, rw):
         """
         Sets the tristimulus values to new values computed by transforming
-        tristimulus values in any `LinearRGB` colour space to `Lab` colour space.
+        tristimulus values in any `RGB` colour space to `Lab` colour space.
 
         :param col: colour
-        :type col: :class:`Colour_LinearRGB`
+        :type col: :class:`Colour_RGB`
         """
         self.from_XYZ(col.to_XYZ(), rw)
 
@@ -882,14 +865,14 @@ class Colour_LCHab(ColourSpace):
         self.from_Lab(col.to_Lab(rw))
 
 
-    def from_LinearRGB(self, col, rw):
+    def from_RGB(self, col, rw):
         """
         Sets the tristimulus values to new values computed by transforming
-        tristimulus values in any `LinearRGB` colour space to `LCHab` colour
+        tristimulus values in any `RGB` colour space to `LCHab` colour
         space.
 
         :param col: colour
-        :type col: :class:`Colour_LinearRGB`
+        :type col: :class:`Colour_RGB`
         """
         self.from_XYZ(col.to_XYZ(), rw)
 
@@ -1061,13 +1044,13 @@ class Colour_Luv(ColourSpace):
         self.v = col.C * math.sin(math.radians(col.H))
 
 
-    def from_LinearRGB(self, col, rw):
+    def from_RGB(self, col, rw):
         """
         Sets the tristimulus values to new values computed by transforming
-        tristimulus values in any `LinearRGB` colour space to `Luv` colour space.
+        tristimulus values in any `RGB` colour space to `Luv` colour space.
 
         :param col: colour
-        :type col: :class:`Colour_LinearRGB`
+        :type col: :class:`Colour_RGB`
         """
         self.from_XYZ(col.to_XYZ(), rw)
 
@@ -1239,14 +1222,14 @@ class Colour_LCHuv(ColourSpace):
             self.H = h
 
 
-    def from_LinearRGB(self, col, rw):
+    def from_RGB(self, col, rw):
         """
         Sets the tristimulus values to new values computed by transforming
-        tristimulus values in any `LinearRGB` colour space to `LCHuv` colour
+        tristimulus values in any `RGB` colour space to `LCHuv` colour
         space.
 
         :param col: colour
-        :type col: :class:`Colour_LinearRGB`
+        :type col: :class:`Colour_RGB`
         """
         self.from_XYZ(col.to_XYZ(), rw)
 
@@ -1497,46 +1480,125 @@ class BaseRGB(ColourSpace):
         return method.I * tmp * method
 
 
-class LinearRGB(BaseRGB):
+    # used when converting XYZ to RGB
+    @staticmethod
+    def _gamma_companding(gamma, t1, t2, t3):
+        p = 1.0 / gamma
+        if t1 < 0.0:
+            t1 = math.pow(-t1, p) * -1.0
+        else:
+            t1 = math.pow(t1, p)
+
+        if t2 < 0.0:
+            t2 = math.pow(-t2, p) * -1.0
+        else:
+            t2 = math.pow(t2, p)
+
+        if t3 < 0.0:
+            t3 = math.pow(-t3, p) * -1.0
+        else:
+            t3 = math.pow(t3, p)
+        return (t1, t2, t3)
+
+
+    # used when converting RGB to XYZ
+    @staticmethod
+    def _inverse_gamma_companding(gamma, r, g, b):
+        import numpy as np
+        t = np.zeros((3, 1))
+        if r < 0.0:
+            t[0, 0] = math.pow(-r, gamma) * -1.0
+        else:
+            t[0, 0] = math.pow(r, gamma)
+
+        if g < 0.0:
+            t[1, 0] = math.pow(-g, gamma) * -1.0
+        else:
+            t[1, 0] = math.pow(g, gamma)
+
+        if b < 0.0:
+            t[2, 0] = math.pow(-b, gamma) * -1.0
+        else:
+            t[2, 0] = math.pow(b, gamma)
+        return t
+
+
+    # used when converting XYZ to sRGB
+    @staticmethod
+    def _sRGB_companding(gamma, t1, t2, t3):
+        p = 1.0 / gamma
+        if t1 > 0.0031308:
+            t1 = 1.055 * math.pow(t1, p) - 0.055
+        else:
+            t1 = 12.92 * t1
+
+        if t2 > 0.0031308:
+            t2 = 1.055 * math.pow(t2, p) - 0.055
+        else:
+            t2 = 12.92 * t2
+
+        if t3 > 0.0031308:
+            t3 = 1.055 * math.pow(t3, p) - 0.055
+        else:
+            t3 = 12.92 * t3
+        return (t1, t2, t3)
+
+
+    # used when converting sRGB to XYZ
+    @staticmethod
+    def _inverse_sRGB_companding(gamma, r, g, b):
+        import numpy as np
+        t = np.zeros((3, 1))
+        if r > 0.04045:
+            t[0, 0] = math.pow((r + 0.055) / 1.055, gamma)
+        else:
+            t[0, 0] = r / 12.92
+
+        if g > 0.04045:
+            t[1, 0] = math.pow((g + 0.055) / 1.055, gamma)
+        else:
+            t[1, 0] = g / 12.92
+
+        if b > 0.04045:
+            t[2, 0] = math.pow((b + 0.055) / 1.055, gamma)
+        else:
+            t[2, 0] = b / 12.92
+        return t        
+
+
+class RGB(BaseRGB):
 
     def __init__(self, gamma, rw, rp, gp, bp, r, g, b):
         """
         see BaseRGB __init__().
         """
+        if(self.__class__.__name__.strip('Colour_') == 'sRGB'):
+            self.companding = BaseRGB._sRGB_companding
+            self.inverse_companding = BaseRGB._inverse_sRGB_companding
+        else:
+            self.companding = BaseRGB._gamma_companding
+            self.inverse_companding = BaseRGB._inverse_gamma_companding
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
     def from_XYZ(self, col):
         """
         Sets the tristimulus values to new values computed by transforming
-        tristimulus values in 'XYZ' colour space to a 'LinearRGB' colour space.
+        tristimulus values in 'XYZ' colour space to a 'RGB' colour space.
 
         :param col: colour
         :type col: :class:`Colour_XYZ`
         """
-        p = 1.0 / self.gamma
-        self.tri = self.m_1_adapted * np.array([[col._t1], [col._t2], [col._t3]])
-
-        if self._t1 < 0.0:
-            self._t1 = math.pow(-self._t1, p) * -1.0
-        else:
-            self._t1 = math.pow(self._t1, p)
-
-        if self._t2 < 0.0:
-            self._t2 = math.pow(-self._t2, p) * -1.0
-        else:
-            self._t2 = math.pow(self._t2, p)
-
-        if self._t3 < 0.0:
-            self._t3 = math.pow(-self._t3, p) * -1.0
-        else:
-            self._t3 = math.pow(self._t3, p)
+        self.tri = (self.m_1_adapted * np.array([[col._t1],
+                                                 [col._t2],
+                                                 [col._t3]])).flat
+        self.tri = self.companding(self.gamma, self._t1, self._t2, self._t3)
 
 
     def from_xyY(self, col):
         """
         Sets the tristimulus values to new values computed by transforming
-        tristimulus values in 'xyY' colour space to a 'LinearRGB' colour space.
+        tristimulus values in 'xyY' colour space to a 'RGB' colour space.
 
         :param col: colour
         :type col: :class:`Colour_xyY`
@@ -1547,7 +1609,7 @@ class LinearRGB(BaseRGB):
     def from_Lab(self, col, rw):
         """
         Sets the tristimulus values to new values computed by transforming
-        tristimulus values in 'Lab' colour space to a 'LinearRGB' colour space.
+        tristimulus values in 'Lab' colour space to a 'RGB' colour space.
 
         :param col: colour
         :type col: :class:`Colour_Lab`
@@ -1560,7 +1622,7 @@ class LinearRGB(BaseRGB):
     def from_LCHab(self, col, rw):
         """
         Sets the tristimulus values to new values computed by transforming
-        tristimulus values in 'LCHab' colour space to a 'LinearRGB' colour space.
+        tristimulus values in 'LCHab' colour space to a 'RGB' colour space.
 
         :param col: colour
         :type col: :class:`Colour_LCHab`
@@ -1573,7 +1635,7 @@ class LinearRGB(BaseRGB):
     def from_Luv(self, col, rw):
         """
         Sets the tristimulus values to new values computed by transforming
-        tristimulus values in 'Luv' colour space to a 'LinearRGB' colour space.
+        tristimulus values in 'Luv' colour space to a 'RGB' colour space.
 
         :param col: colour
         :type col: :class:`Colour_Luv`
@@ -1586,7 +1648,7 @@ class LinearRGB(BaseRGB):
     def from_LCHuv(self, col, rw):
         """
         Sets the tristimulus values to new values computed by transforming
-        tristimulus values in 'LCHuv' colour space to a 'LinearRGB' colour space.
+        tristimulus values in 'LCHuv' colour space to a 'RGB' colour space.
 
         :param col: colour
         :type col: :class:`Colour_LCHuv`
@@ -1597,21 +1659,23 @@ class LinearRGB(BaseRGB):
 
 
     for cs in ColourSpace.supported_colour_spaces():
-        if cs is not 'LinearRGB':
-            if cs in ('XYZ', 'xyY'):
+        reference_white_not_required = ['XYZ', 'xyY']
+        if cs is not 'RGB':
+            if cs in reference_white_not_required:
                 exec("def to_{0}(self):\n"
                      "  rt = Colour_{0}()\n"
                      "  rt.from_{1}(self)\n"
-                     "  return rt".format(cs, 'LinearRGB'))
+                     "  return rt".format(cs, 'RGB'))
             else:
                 exec("def to_{0}(self, rw):\n"
                      "  rt = Colour_{0}()\n"
                      "  rt.from_{1}(self, rw)\n"
-                     "  return rt".format(cs, 'LinearRGB'))
+                     "  return rt".format(cs, 'RGB'))
     del cs
+    del reference_white_not_required
 
 
-class Colour_AdobeRGB(LinearRGB):
+class Colour_AdobeRGB(RGB):
 
     def __init__(self, r=1.0, g=1.0, b=1.0):
         """
@@ -1633,7 +1697,7 @@ class Colour_AdobeRGB(LinearRGB):
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
-class Colour_AppleRGB(LinearRGB):
+class Colour_AppleRGB(RGB):
 
     def __init__(self, r=1.0, g=1.0, b=1.0):
         """
@@ -1655,7 +1719,7 @@ class Colour_AppleRGB(LinearRGB):
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
-class Colour_BestRGB(LinearRGB):
+class Colour_BestRGB(RGB):
 
     def __init__(self, r=1.0, g=1.0, b=1.0):
         """
@@ -1677,7 +1741,7 @@ class Colour_BestRGB(LinearRGB):
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
-class Colour_BetaRGB(LinearRGB):
+class Colour_BetaRGB(RGB):
 
     def __init__(self, r=1.0, g=1.0, b=1.0):
         """
@@ -1699,7 +1763,7 @@ class Colour_BetaRGB(LinearRGB):
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
-class Colour_BruceRGB(LinearRGB):
+class Colour_BruceRGB(RGB):
 
     def __init__(self, r=1.0, g=1.0, b=1.0):
         """
@@ -1721,7 +1785,7 @@ class Colour_BruceRGB(LinearRGB):
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
-class Colour_CIERGB(LinearRGB):
+class Colour_CIERGB(RGB):
 
     def __init__(self, r=1.0, g=1.0, b=1.0):
         """
@@ -1743,7 +1807,7 @@ class Colour_CIERGB(LinearRGB):
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
-class Colour_ColorMatchRGB(LinearRGB):
+class Colour_ColorMatchRGB(RGB):
 
     def __init__(self, r=1.0, g=1.0, b=1.0):
         """
@@ -1766,7 +1830,7 @@ class Colour_ColorMatchRGB(LinearRGB):
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
-class Colour_DonRGB4(LinearRGB):
+class Colour_DonRGB4(RGB):
 
     def __init__(self, r=1.0, g=1.0, b=1.0):
         """
@@ -1788,7 +1852,7 @@ class Colour_DonRGB4(LinearRGB):
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
-class Colour_ECIRGB(LinearRGB):
+class Colour_ECIRGB(RGB):
 
     def __init__(self, r=1.0, g=1.0, b=1.0):
         """
@@ -1810,7 +1874,7 @@ class Colour_ECIRGB(LinearRGB):
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
-class Colour_EktaSpacePS5(LinearRGB):
+class Colour_EktaSpacePS5(RGB):
 
     def __init__(self, r=1.0, g=1.0, b=1.0):
         """
@@ -1833,7 +1897,7 @@ class Colour_EktaSpacePS5(LinearRGB):
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
-class Colour_NTSCRGB(LinearRGB):
+class Colour_NTSCRGB(RGB):
 
     def __init__(self, r=1.0, g=1.0, b=1.0):
         """
@@ -1855,7 +1919,7 @@ class Colour_NTSCRGB(LinearRGB):
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
-class Colour_PAL_SECAMRGB(LinearRGB):
+class Colour_PAL_SECAMRGB(RGB):
 
     def __init__(self, r=1.0, g=1.0, b=1.0):
         """
@@ -1878,7 +1942,7 @@ class Colour_PAL_SECAMRGB(LinearRGB):
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
-class Colour_ProPhotoRGB(LinearRGB):
+class Colour_ProPhotoRGB(RGB):
 
     def __init__(self, r=1.0, g=1.0, b=1.0):
         """
@@ -1901,7 +1965,7 @@ class Colour_ProPhotoRGB(LinearRGB):
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
-class Colour_SMPTE_CRGB(LinearRGB):
+class Colour_SMPTE_CRGB(RGB):
 
     def __init__(self, r=1.0, g=1.0, b=1.0):
         """
@@ -1924,7 +1988,7 @@ class Colour_SMPTE_CRGB(LinearRGB):
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
-class Colour_WideGamutRGB(LinearRGB):
+class Colour_WideGamutRGB(RGB):
 
     def __init__(self, r=1.0, g=1.0, b=1.0):
         """
@@ -1947,11 +2011,32 @@ class Colour_WideGamutRGB(LinearRGB):
         super().__init__(gamma, rw, rp, gp, bp, r, g, b)
 
 
+class Colour_sRGB(RGB):
+
+    def __init__(self, r=1.0, g=1.0, b=1.0):
+        """
+        Initializes the tristimulus values of a colour in sRGB colour space.
+
+        :param r: The r coordinate
+        :type r: float
+        :param g: The g coordinate
+        :type g: float
+        :param b: The b coordinate
+        :type b: float
+        """
+        import colpy.core.illum as illum
+        gamma = 2.4
+        rw = illum.IlluminantD65('1931_2')
+        rp = Colour_xyY(0.64, 0.33)
+        gp = Colour_xyY(0.30, 0.60)
+        bp = Colour_xyY(0.15, 0.06)
+        super().__init__(gamma, rw, rp, gp, bp, r, g, b)
+
+
 def colour(t1, t2, t3, cs):
     if cs not in ColourSpace.supported_colour_spaces():
         raise ValueError("unsupported colour space")
     return eval("Colour_{0}(t1, t2, t3)".format(cs))
-
 
 
 class converter():
@@ -1960,7 +2045,7 @@ class converter():
         self.__src = eval("Colour_{0}()".format(source))
         tar = eval("Colour_{0}()".format(target))
         if source in _linear_RGB_colour_spaces:
-            self.__func = eval("tar.from_LinearRGB")
+            self.__func = eval("tar.from_RGB")
         else:
             self.__func = eval("tar.from_{0}".format(source))
 
