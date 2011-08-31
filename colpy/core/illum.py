@@ -253,3 +253,8 @@ class IlluminantCustom(BaseIlluminant):
 
     def __init__(self, x, y):
         super().__init__(x, y)
+
+
+#if __name__ == "__main__":
+#    import doctest
+#    doctest.testmod()
