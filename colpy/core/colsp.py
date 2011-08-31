@@ -2044,7 +2044,7 @@ class converter():
     def __init__(self, source, target):
         self.__src = eval("Colour_{0}()".format(source))
         tar = eval("Colour_{0}()".format(target))
-        if source in _linear_RGB_colour_spaces:
+        if source in _RGB:
             self.__func = eval("tar.from_RGB")
         else:
             self.__func = eval("tar.from_{0}".format(source))
