@@ -35,7 +35,7 @@ AUTHOR              = "Arlen Aghakians"
 AUTHOR_EMAIL        = "arlen.prime@gmail.com"
 #PLATFORMS           = ["Windows", "Linux", "Mac OS-X"]
 MAJOR               = 0
-MINOR               = 1
+MINOR               = 9
 MICRO               = 0
 VERSION             = '%d.%d.%d' % (MAJOR, MINOR, MICRO)
 
