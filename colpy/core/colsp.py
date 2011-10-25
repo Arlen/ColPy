@@ -303,10 +303,10 @@ class Colour_XYZ(ColourSpace):
         else:
             self.Y = col.L / cie_kappa()
 
-        b = -5.0 * Y
-        d = (((39 * col.L) / (col.v + 13 * col.L * vo)) - 5) * Y
+        b = -5.0 * self.Y
+        d = (((39 * col.L) / (col.v + 13 * col.L * vo)) - 5) * self.Y
         self.X = (d - b) / (a - c)
-        self.Z = X * a + b
+        self.Z = self.X * a + b
 
 
     def from_LCHuv(self, col, rw):
@@ -830,11 +830,11 @@ class Colour_LCHab(ColourSpace):
         """
         self.L = col.L
         self.C = math.sqrt(col.a * col.a + col.b * col.b)
-        h = math.angles(math.atan2(col.b, col.a))
+        h = math.degrees(math.atan2(col.b, col.a))
         if h < 0.0:
-            self.H = h + 360
-        elif h > 360.0:
-            self.H = h - 360
+            self.H = h + 360.0
+        elif h >= 360.0:
+            self.H = h - 360.0
         else:
             self.H = h
 
@@ -988,8 +988,8 @@ class Colour_Luv(ColourSpace):
             self.L = 116 * math.pow(yr, 1/3) - 16
         else:
             self.L = cie_kappa() * yr
-        self.u = 13 * L * (up - urp)
-        self.v = 13 * L * (vp - vrp)
+        self.u = 13 * self.L * (up - urp)
+        self.v = 13 * self.L * (vp - vrp)
 
 
     def from_xyY(self, col, rw):
@@ -1213,11 +1213,11 @@ class Colour_LCHuv(ColourSpace):
         """
         self.L = col.L
         self.C = math.sqrt(col.u * col.u + col.v * col.v)
-        h = math.angles(math.ata2(col.v, col.u))
+        h = math.degrees(math.atan2(col.v, col.u))
         if h < 0.0:
-            self.H = h + 360
-        elif h >= 360:
-            self.H = h - 360
+            self.H = h + 360.0
+        elif h >= 360.0:
+            self.H = h - 360.0
         else:
             self.H = h
 
